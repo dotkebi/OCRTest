@@ -4,4 +4,6 @@
     <string name="recognizedText">RECOGNIZED TEXT HERE!</string>
     <string name="sampleImage">SAMPLE IMAGE</string>
     <string name="next">next</string>
+    <string name="unrecognizedText">Unrecognized Text!</string>
+    <string name="endOfSamples">End of Samples</string>
 </resources>

@@ -6,6 +6,7 @@ import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.os.Environment;
 import android.support.v7.app.AppCompatActivity;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -75,7 +76,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void setImage() {
         if (index >= sampleList.length) {
-            Toast.makeText(MainActivity.this, "FINISH", Toast.LENGTH_SHORT).show();
+            Toast.makeText(MainActivity.this, R.string.endOfSamples, Toast.LENGTH_SHORT).show();
             return;
         }
         try {
@@ -132,6 +133,10 @@ public class MainActivity extends AppCompatActivity {
         String recognizedText = baseApi.getUTF8Text();
         baseApi.end();
 
+        if (TextUtils.isEmpty(recognizedText)) {
+            Toast.makeText(MainActivity.this, R.string.unrecognizedText, Toast.LENGTH_SHORT).show();
+            return;
+        }
         textView.setText(recognizedText);
     }
 
