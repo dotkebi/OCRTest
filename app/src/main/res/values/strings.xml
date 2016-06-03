@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">OCRTest</string>
+    <string name="start">START</string>
+    <string name="recognizedText">RECOGNIZED TEXT HERE!</string>
+    <string name="sampleImage">SAMPLE IMAGE</string>
+    <string name="next">next</string>
+</resources>
