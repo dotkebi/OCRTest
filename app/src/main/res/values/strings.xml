@@ -6,4 +6,5 @@
     <string name="next">next</string>
     <string name="unrecognizedText">Unrecognized Text!</string>
     <string name="endOfSamples">End of Samples</string>
+    <string name="working">Recognizing</string>
 </resources>

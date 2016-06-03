@@ -1,8 +1,10 @@
 package com.github.dotkebi.ocrtest;
 
+import android.app.ProgressDialog;
 import android.content.res.AssetManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
 import android.support.v7.app.AppCompatActivity;
@@ -42,6 +44,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         initData();
 
+        bitmap = null;
         imageView = (ImageView) findViewById(R.id.image);
         textView = (TextView) findViewById(R.id.text);
 
@@ -64,7 +67,8 @@ public class MainActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case R.id.start:
-                startOCR();
+                OCRAsync ocrAsync = new OCRAsync();
+                ocrAsync.execute(bitmap);
                 break;
 
             case R.id.next:
@@ -75,17 +79,13 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void setImage() {
+        textView.setText("");
         if (index >= sampleList.length) {
             Toast.makeText(MainActivity.this, R.string.endOfSamples, Toast.LENGTH_SHORT).show();
             return;
         }
-        try {
-            bitmap = BitmapFactory.decodeStream(getAssets().open("test/" + sampleList[index]));
-            imageView.setImageBitmap(bitmap);
-            ++index;
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        ImageAsync imageAsync = new ImageAsync();
+        imageAsync.execute(sampleList[index]);
     }
 
     private void initData() {
@@ -125,24 +125,69 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void startOCR() {
-        TessBaseAPI baseApi = new TessBaseAPI();
-        baseApi.init(DATA_PATH, LANG);
-        baseApi.setImage(bitmap);
-        baseApi.setPageSegMode(7);
-        String recognizedText = baseApi.getUTF8Text();
-        baseApi.end();
-
-        if (TextUtils.isEmpty(recognizedText)) {
-            Toast.makeText(MainActivity.this, R.string.unrecognizedText, Toast.LENGTH_SHORT).show();
-            return;
-        }
-        textView.setText(recognizedText);
-    }
-
     @Override
     protected void onDestroy() {
         super.onDestroy();
         bitmap.recycle();
+        if (progressDialog != null && progressDialog.isShowing()) {
+            progressDialog.dismiss();
+            progressDialog = null;
+        }
     }
+
+    class ImageAsync extends AsyncTask<String, Void, Bitmap> {
+
+        @Override
+        protected Bitmap doInBackground(String... params) {
+            Bitmap bitmap = null;
+            try {
+                bitmap = BitmapFactory.decodeStream(getAssets().open("test/" + params[0]));
+                ++index;
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            return bitmap;
+        }
+
+        @Override
+        protected void onPostExecute(Bitmap bitmap) {
+            super.onPostExecute(bitmap);
+            MainActivity.this.bitmap = bitmap;
+            imageView.setImageBitmap(bitmap);
+        }
+    }
+
+    ProgressDialog progressDialog;
+    class OCRAsync extends AsyncTask<Bitmap, Void, String> {
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            progressDialog = ProgressDialog.show(MainActivity.this, getString(R.string.app_name), getString(R.string.working), true, false);
+        }
+
+        @Override
+        protected String doInBackground(Bitmap... params) {
+            TessBaseAPI baseApi = new TessBaseAPI();
+            baseApi.init(DATA_PATH, LANG);
+            baseApi.setImage(params[0]);
+            String recognizedText = baseApi.getUTF8Text();
+            baseApi.end();
+            return recognizedText;
+        }
+
+        @Override
+        protected void onPostExecute(String s) {
+            super.onPostExecute(s);
+
+            progressDialog.dismiss();
+
+            if (TextUtils.isEmpty(s)) {
+                Toast.makeText(MainActivity.this, R.string.unrecognizedText, Toast.LENGTH_SHORT).show();
+                return;
+            }
+            textView.setText(s);
+        }
+    }
+
 }
