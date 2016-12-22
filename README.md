@@ -1,4 +1,4 @@
-# simple android OCRTest sample
+# android OCR sample project
 - using tess-two library
 
 - language data : KOR
