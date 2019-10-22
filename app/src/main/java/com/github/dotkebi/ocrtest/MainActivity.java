@@ -1,40 +1,20 @@
 package com.github.dotkebi.ocrtest;
 
-import android.app.ProgressDialog;
+import android.content.Intent;
 import android.content.res.AssetManager;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.os.AsyncTask;
 import android.os.Bundle;
-import android.os.Environment;
-import android.text.TextUtils;
 import android.util.Log;
-import android.view.Menu;
-import android.view.MenuItem;
-import android.widget.ImageView;
-import android.widget.TextView;
-import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
-import com.googlecode.tesseract.android.TessBaseAPI;
+import androidx.core.content.ContextCompat;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-public class MainActivity extends AppCompatActivity {
-
-  private static final String DATA_PATH = Environment
-      .getExternalStorageDirectory().toString() + "/ocrtest/";
-
-  private static final String LANG = "kor";
-
-  ImageView imageView;
-  TextView textView;
-
-  Bitmap bitmap;
-  String[] sampleList;
-  int index = 0;
+public class MainActivity extends AppCompatActivity implements OnClickCallback {
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
@@ -42,71 +22,40 @@ public class MainActivity extends AppCompatActivity {
     setContentView(R.layout.activity_main);
     initData();
 
-    bitmap = null;
-    imageView = findViewById(R.id.image);
-    textView = findViewById(R.id.text);
+    RecyclerView recyclerView = findViewById(R.id.listView);
 
     try {
-      sampleList = getAssets().list("test");
+      BitmapRecyclerAdapter adapter = new BitmapRecyclerAdapter(this, this, getAssets().list("test"));
+      recyclerView.setAdapter(adapter);
+
+      recyclerView.setLayoutManager(new LinearLayoutManager(this));
     } catch (IOException e) {
       e.printStackTrace();
     }
 
-    setImage();
-  }
-
-  @Override
-  public boolean onCreateOptionsMenu(Menu menu) {
-    getMenuInflater().inflate(R.menu.main, menu);
-    return super.onCreateOptionsMenu(menu);
-  }
-
-  @Override
-  public boolean onOptionsItemSelected(MenuItem item) {
-    switch (item.getItemId()) {
-      case R.id.start:
-        OCRAsync ocrAsync = new OCRAsync();
-        ocrAsync.execute(bitmap);
-        break;
-
-      case R.id.next:
-        setImage();
-        break;
-    }
-    return true;
-  }
-
-  private void setImage() {
-    textView.setText("");
-    if (index >= sampleList.length) {
-      Toast.makeText(MainActivity.this, R.string.endOfSamples, Toast.LENGTH_SHORT).show();
-      return;
-    }
-    ImageAsync imageAsync = new ImageAsync();
-    imageAsync.execute(sampleList[index]);
   }
 
   private void initData() {
-    String[] paths = new String[]{DATA_PATH, DATA_PATH + "tessdata/"};
+    String[] paths = new String[]{Constants.DATA_PATH, Constants.DATA_PATH + "tessdata/"};
 
     for (String path : paths) {
       File dir = new File(path);
       if (!dir.exists()) {
         if (!dir.mkdirs()) {
-          Log.v(LANG, "ERROR: Creation of directory " + path + " on sdcard failed");
+          Log.v(Constants.LANG, "ERROR: Creation of directory " + path + " on sdcard failed");
           return;
         } else {
-          Log.v(LANG, "Created directory " + path + " on sdcard");
+          Log.v(Constants.LANG, "Created directory " + path + " on sdcard");
         }
       }
     }
 
-    if (!(new File(DATA_PATH + "tessdata/" + LANG + ".traineddata")).exists()) {
+    if (!(new File(Constants.DATA_PATH + "tessdata/" + Constants.LANG + ".traineddata")).exists()) {
       try {
         AssetManager assetManager = getAssets();
-        InputStream in = assetManager.open("tessdata/" + LANG + ".traineddata");
-        OutputStream out = new FileOutputStream(DATA_PATH
-            + "tessdata/" + LANG + ".traineddata");
+        InputStream in = assetManager.open("tessdata/" + Constants.LANG + ".traineddata");
+        OutputStream out = new FileOutputStream(Constants.DATA_PATH
+            + "tessdata/" + Constants.LANG + ".traineddata");
 
         byte[] buf = new byte[1024];
         int len;
@@ -116,79 +65,20 @@ public class MainActivity extends AppCompatActivity {
         in.close();
         out.close();
 
-        Log.v(LANG, "Copied " + LANG + " traineddata");
+        Log.v(Constants.LANG, "Copied " + Constants.LANG + " traineddata");
       } catch (IOException e) {
-        Log.e(LANG, "Was unable to copy " + LANG + " traineddata " + e.toString());
+        Log.e(Constants.LANG,
+            "Was unable to copy " + Constants.LANG + " traineddata " + e.toString());
       }
     }
   }
+
 
   @Override
-  protected void onDestroy() {
-    super.onDestroy();
-    bitmap.recycle();
-    if (progressDialog != null && progressDialog.isShowing()) {
-      progressDialog.dismiss();
-      progressDialog = null;
-    }
+  public void onClick(String resourceName) {
+
+    Intent intent = new Intent(MainActivity.this, ResultActivity.class);
+    intent.putExtra("item", resourceName);
+    startActivity(intent);
   }
-
-  class ImageAsync extends AsyncTask<String, Void, Bitmap> {
-
-    @Override
-    protected Bitmap doInBackground(String... params) {
-      Bitmap bitmap = null;
-      try {
-        bitmap = BitmapFactory.decodeStream(getAssets().open("test/" + params[0]));
-        ++index;
-      } catch (IOException e) {
-        e.printStackTrace();
-      }
-      return bitmap;
-    }
-
-    @Override
-    protected void onPostExecute(Bitmap bitmap) {
-      super.onPostExecute(bitmap);
-      MainActivity.this.bitmap = bitmap;
-      imageView.setImageBitmap(bitmap);
-    }
-  }
-
-  ProgressDialog progressDialog;
-
-  class OCRAsync extends AsyncTask<Bitmap, Void, String> {
-
-    @Override
-    protected void onPreExecute() {
-      super.onPreExecute();
-      progressDialog = ProgressDialog
-          .show(MainActivity.this, getString(R.string.app_name), getString(R.string.working), true,
-              false);
-    }
-
-    @Override
-    protected String doInBackground(Bitmap... params) {
-      TessBaseAPI baseApi = new TessBaseAPI();
-      baseApi.init(DATA_PATH, LANG);
-      baseApi.setImage(params[0]);
-      String recognizedText = baseApi.getUTF8Text();
-      baseApi.end();
-      return recognizedText;
-    }
-
-    @Override
-    protected void onPostExecute(String s) {
-      super.onPostExecute(s);
-
-      progressDialog.dismiss();
-
-      if (TextUtils.isEmpty(s)) {
-        Toast.makeText(MainActivity.this, R.string.unrecognizedText, Toast.LENGTH_SHORT).show();
-        return;
-      }
-      textView.setText(s);
-    }
-  }
-
 }

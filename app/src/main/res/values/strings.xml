@@ -1,10 +1,11 @@
 <resources>
-    <string name="app_name">OCRTest</string>
-    <string name="start">START</string>
-    <string name="recognizedText">RECOGNIZED TEXT HERE!</string>
-    <string name="sampleImage">SAMPLE IMAGE</string>
-    <string name="next">next</string>
-    <string name="unrecognizedText">Unrecognized Text!</string>
-    <string name="endOfSamples">End of Samples</string>
-    <string name="working">Recognizing</string>
+  <string name="app_name">OCRTest</string>
+  <string name="start">START</string>
+  <string name="recognizedText">RECOGNIZED TEXT HERE!</string>
+  <string name="sampleImage">SAMPLE IMAGE</string>
+  <string name="next">next</string>
+  <string name="unrecognizedText">Unrecognized Text!</string>
+  <string name="endOfSamples">End of Samples</string>
+  <string name="working">Recognizing</string>
+  <string name="result">Result</string>
 </resources>
