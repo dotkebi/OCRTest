@@ -1,37 +1,36 @@
 package com.github.dotkebi.ocrtest;
 
+import android.Manifest.permission;
 import android.content.Intent;
 import android.content.res.AssetManager;
 import android.os.Bundle;
 import android.util.Log;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import com.gun0912.tedpermission.PermissionListener;
+import com.gun0912.tedpermission.TedPermission;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.ArrayList;
 
-public class MainActivity extends AppCompatActivity implements OnClickCallback {
+public class MainActivity extends AppCompatActivity implements OnClickCallback, PermissionListener {
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
     setContentView(R.layout.activity_main);
-    initData();
 
-    RecyclerView recyclerView = findViewById(R.id.listView);
+    TedPermission.with(this)
+        .setPermissionListener(this)
+        .setDeniedMessage(
+            "If you reject permission,you can not use this service")
+        .setPermissions(permission.READ_EXTERNAL_STORAGE, permission.WRITE_EXTERNAL_STORAGE)
+        .check();
 
-    try {
-      BitmapRecyclerAdapter adapter = new BitmapRecyclerAdapter(this, this, getAssets().list("test"));
-      recyclerView.setAdapter(adapter);
-
-      recyclerView.setLayoutManager(new LinearLayoutManager(this));
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
 
   }
 
@@ -80,5 +79,28 @@ public class MainActivity extends AppCompatActivity implements OnClickCallback {
     Intent intent = new Intent(MainActivity.this, ResultActivity.class);
     intent.putExtra("item", resourceName);
     startActivity(intent);
+  }
+
+  @Override
+  public void onPermissionGranted() {
+    initData();
+
+    RecyclerView recyclerView = findViewById(R.id.listView);
+
+    try {
+      BitmapRecyclerAdapter adapter = new BitmapRecyclerAdapter(this, this,
+          getAssets().list("test"));
+      recyclerView.setAdapter(adapter);
+
+      recyclerView.setLayoutManager(new LinearLayoutManager(this));
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+
+  }
+
+  @Override
+  public void onPermissionDenied(ArrayList<String> deniedPermissions) {
+
   }
 }
